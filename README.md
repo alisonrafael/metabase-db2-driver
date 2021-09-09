@@ -1,14 +1,14 @@
 
 # Metabase Driver: DB2
 
-Works with DB2 9.7 for LUW with no use of DB2_COMPATIBILITY_VECTOR and no DB2_DEFERRED_PREPARE_SEMANTICS. 
+DB2 Driver for Metabase v0.40.x, working with DB2 9.7 for LUW (Linux,UNIX,Windows) with no use of DB2_COMPATIBILITY_VECTOR and no DB2_DEFERRED_PREPARE_SEMANTICS. 
 
 ###  Running Metabase application with DB2 driver plugin
 First download Metabase Jar File [here](https://metabase.com/start/other.html)  and run
 ```bash
 java -jar metabase.jar
 ```
-The `plugins/` directory will be created. Drop the driver in your `plugins/` directory. You can grab it [here](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.0/db2.metabase-driver.jar) or build it yourself:
+The `plugins/` directory will be created. Drop the driver in your `plugins/` directory. You can grab it [here](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.40/db2.metabase-driver.jar) or build it yourself:
 
 ##  Editing the plugin: Prerequisites
 
