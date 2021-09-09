@@ -1,5 +1,5 @@
 (ns metabase.driver.db2
-  "Driver for DB2 databases."
+  "Driver for DB2 for LUW databases."
   (:require [clojure.java.jdbc :as jdbc]
             [clojure.string :as str]
             [clj-time
@@ -89,7 +89,17 @@
   (mapcat
    driver.common/create-db-time-formatters
    ["yyyy-MM-dd HH:mm:ss"
-    "yyyy-MM-dd HH:mm:ss.SSSSS"]))
+    "yyyy-MM-dd HH:mm:ss.SSS"
+    "yyyy-MM-dd HH:mm:ss.SSSSS"
+    "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    "yyyy-MM-dd HH:mm:ss.SSSZ"
+    "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+    "yyyy-MM-dd HH:mm:ss.SSSZZ"
+    "yyyy-MM-dd'T'HH:mm:ss.SSSZZ"
+    "yyyy-MM-dd HH:mm:ss.SSSSSSZZ"
+    "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZZ"
+    "yyyy-MM-dd HH:mm:ss.SSSSSSSSSZZ"
+    "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSSZZ"]))
 
 (defmethod driver.common/current-db-time-native-query :db2 [_]
   "SELECT TO_CHAR(CURRENT TIMESTAMP, 'yyyy-MM-dd HH:mm:ss') FROM SYSIBM.SYSDUMMY1") 
@@ -124,8 +134,8 @@
 (defmethod sql.qp/date [:db2 :day-of-year]     [driver _ expr] (hsql/call :dayofyear expr))
 (defmethod sql.qp/date [:db2 :quarter-of-year] [driver _ expr] (hsql/call :quarter expr))
 
-(defmethod driver/date-add :db2 [_ dt amount unit]
-  (hx/+ (hx/->timestamp dt) (case unit
+(defmethod sql.qp/add-interval-honeysql-form :db2 [_ hsql-form amount unit]
+  (hx/+ (hx/->timestamp hsql-form) (case unit
     :second  (hsql/raw (format "%d seconds" (int amount)))
     :minute  (hsql/raw (format "%d minutes" (int amount)))
     :hour    (hsql/raw (format "%d hours" (int amount)))
@@ -136,14 +146,19 @@
     :year    (hsql/raw (format "%d years" (int amount)))
   )))
 
-(defmethod sql.qp/unix-timestamp->timestamp [:db2 :seconds] [_ _ expr]
+(defmethod sql.qp/unix-timestamp->honeysql [:db2 :seconds] [_ _ expr]
   (hx/+ (hsql/raw "timestamp('1970-01-01 00:00:00')") (hsql/raw (format "%d seconds" (int expr))))
 
-(defmethod sql.qp/unix-timestamp->timestamp [:db2 :milliseconds] [driver _ expr]
+(defmethod sql.qp/unix-timestamp->honeysql [:db2 :milliseconds] [driver _ expr]
   (hx/+ (hsql/raw "timestamp('1970-01-01 00:00:00')") (hsql/raw (format "%d seconds" (int (hx// expr 1000)))))))
 
 (def ^:private now (hsql/raw "current timestamp"))
-(defmethod sql.qp/current-datetime-fn :db2 [_] now)
+
+(defmethod sql.qp/current-datetime-honeysql-form :db2 [_] now)
+
+(defmethod sql.qp/->honeysql [:db2 Boolean]
+  [_ bool]
+  (if bool 1 0))
 
 ;; Use LIMIT OFFSET support DB2 v9.7 https://www.ibm.com/developerworks/community/blogs/SQLTips4DB2LUW/entry/limit_offset?lang=en
 ;; Maybe it could not to be necessary with the use of DB2_COMPATIBILITY_VECTOR
@@ -221,7 +236,7 @@
   (if (zero-time? t)
     (sql.qp/->honeysql driver (t/local-date t))
     (hsql/call :datetime (hx/literal (du/format-sql t)))))
-  
+
 ;; (.getObject rs i LocalDate) doesn't seem to work, nor does `(.getDate)`; ;;v0.34.x
 ;; Merged from vertica.clj e sqlite.clj. 
 ;; Fix to Invalid data conversion: Wrong result column type for requested conversion. ERRORCODE=-4461
@@ -257,7 +272,7 @@
       (sql-jdbc.common/handle-additional-options details, :seperator-style :semicolon)))
 
 (defmethod driver/can-connect? :db2 [driver details]
-  (let [connection (sql-jdbc.conn/connection-details->spec driver (ssh/include-ssh-tunnel details))]
+  (let [connection (sql-jdbc.conn/connection-details->spec driver (ssh/include-ssh-tunnel! details))]
     (= 1 (first (vals (first (jdbc/query connection ["SELECT 1 FROM SYSIBM.SYSDUMMY1"])))))))
 
 ;; Mappings for DB2 types to Metabase types.
@@ -288,23 +303,30 @@
     :VARGRAPHIC   :type/Text
     :XML          :type/Text
     (keyword "CHAR () FOR BIT DATA")      :type/*
+    (keyword "CHAR() FOR BIT DATA") :type/*
     (keyword "LONG VARCHAR")              :type/*
     (keyword "LONG VARCHAR FOR BIT DATA") :type/*
     (keyword "LONG VARGRAPHIC")           :type/*
-    (keyword "VARCHAR () FOR BIT DATA")   :type/*} database-type))
+    (keyword "VARCHAR () FOR BIT DATA")   :type/*
+    (keyword "VARCHAR() FOR BIT DATA")   :type/*} database-type))
 
 (defmethod sql-jdbc.sync/excluded-schemas :db2 [_]
-  #{"SQLJ" 
-    "SYSCAT" 
-    "SYSFUN" 
-    "SYSIBMADM" 
-    "SYSIBMINTERNAL" 
-    "SYSIBMTS" 
+  #{"QSYS"
+    "QSYS2"
+    "SQLJ" 
+    "SYSCAT"
+    "SYSFUN"
+    "SYSIBM"
+    "SYSIBMADM"
+    "SYSIBMINTERNAL"
+    "SYSIBMTS"
     "SPOOLMAIL"
-    "SYSPROC" 
-    "SYSPUBLIC" 
+    "SYSPROC"
+    "SYSPUBLIC"
+    "SYSTOOLS"
     "SYSSTAT"
-    "SYSTOOLS"})
+    "QHTTPSVR"
+    "QUSRSYS"})
 
 (defmethod sql-jdbc.execute/set-timezone-sql :db2 [_]
   "SET SESSION TIME ZONE = %s")

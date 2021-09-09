@@ -12,7 +12,7 @@ The `plugins/` directory will be created. Drop the driver in your `plugins/` dir
 
 ##  Editing the plugin: Prerequisites
 
-### Java JDK 8
+### Java JDK 11
 Check java, javac and jar installation
 ```bash
 java -version
@@ -24,17 +24,17 @@ jar
 Install [Node.js]([https://nodejs.org](https://nodejs.org/))
 ```bash
 sudo apt-get install curl
-curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
 sudo apt-get install nodejs
 node -v 
 ```
-### Leininger
-Install [Leininger]([https://leiningen.org/](https://leiningen.org/))
+
+### Clojure
+Install [Clojure]([https://clojure.org/guides/getting_started))
 ```bash
-wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
-chmod +x lein
-sudo mv lein /usr/local/bin
-lein -v
+curl -O https://download.clojure.org/install/linux-install-1.10.3.967.sh
+chmod +x linux-install-1.10.3.967.sh
+sudo ./linux-install-1.10.3.967.sh
 ```
 
 ### Yarn
@@ -54,13 +54,9 @@ Clone the [Metabase repo](https://github.com/metabase/metabase) first if you hav
 
 ### Clone the DB2 Metabase Driver
 
-Clone the [DB2 driver repo](https://github.com/alisonrafael/metabase-db2-driver) inside drivers modules folder `/metabase_source/modules/drivers`.
+Clone the [DB2 driver repo](https://github.com/alisonrafael/metabase-db2-driver) inside drivers modules folder `/metabase_source/modules/drivers`. Rename the folder to 'db2' only.
 
-### Compile Metabase for building drivers
-```bash
-cd /path/to/metabase_source
-lein install-for-building-drivers
-```
+Edit `/metabase_source/modules/drivers/deps.edn` and insert a db2 parameter.
 
 ### Compile the DB2 driver
 ```bash
@@ -70,7 +66,7 @@ lein install-for-building-drivers
 ### Copy it to your plugins dir
 ```bash
 mkdir -p /path/to/metabase/plugins/
-cp /metabase_source/modules/drivers/db2/target/uberjar/db2.metabase-driver.jar /path/to/metabase/plugins/
+cp /metabase_source/resources/modules/db2.metabase-driver.jar /path/to/metabase/plugins/
 ```
 
 ### Run Metabase

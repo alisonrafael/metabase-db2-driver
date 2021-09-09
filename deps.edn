@@ -1,0 +1,6 @@
+{:paths ["src" "resources"]
+
+ :deps
+ {com.ibm.db2/jcc {:mvn/version "11.1.4.4"}}
+ 
+}

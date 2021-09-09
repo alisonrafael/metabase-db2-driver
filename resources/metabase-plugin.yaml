@@ -1,7 +1,7 @@
 info:
   name: Metabase DB2 Driver
-  version: 1.0.0-SNAPSHOT-11.1.4.4
-  description: Allows Metabase to connect to DB2 databases.
+  version: 1.0.2
+  description: Allows Metabase to connect to DB2 for LUW databases.
 driver:
   name: db2
   display-name: DB2
