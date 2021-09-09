@@ -21,7 +21,7 @@ jar
 ```
 
 ### Node.js
-Install [Node.js]([https://nodejs.org](https://nodejs.org/))
+Install [Node.js](https://nodejs.org/)
 ```bash
 sudo apt-get install curl
 curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
@@ -30,7 +30,7 @@ node -v
 ```
 
 ### Clojure
-Install [Clojure]([https://clojure.org/guides/getting_started))
+Install [Clojure](https://clojure.org/guides/getting_started)
 ```bash
 curl -O https://download.clojure.org/install/linux-install-1.10.3.967.sh
 chmod +x linux-install-1.10.3.967.sh
@@ -38,7 +38,7 @@ sudo ./linux-install-1.10.3.967.sh
 ```
 
 ### Yarn
-Install [Yarn]([https://yarnpkg.com/lang/en/](https://yarnpkg.com/lang/en/))
+Install [Yarn](https://yarnpkg.com/lang/en/)
 ```bash
 curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
 echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
@@ -54,7 +54,7 @@ Clone the [Metabase repo](https://github.com/metabase/metabase) first if you hav
 
 ### Clone the DB2 Metabase Driver
 
-Clone the [DB2 driver repo](https://github.com/alisonrafael/metabase-db2-driver) inside drivers modules folder `/metabase_source/modules/drivers`. Rename the folder to 'db2' only.
+Clone the [DB2 driver repo](https://github.com/alisonrafael/metabase-db2-driver) inside drivers modules folder `/metabase_source/modules/drivers` and rename the folder to 'db2' only.
 
 Edit `/metabase_source/modules/drivers/deps.edn` and insert a db2 parameter.
 
@@ -89,12 +89,12 @@ or set it as an environment variable
 export JAVA_TOOL_OPTIONS="-Ddb2.jcc.charsetDecoderEncoder=3"
 ```
 
-I recommend the following additional connection parameters for performance:
+I recommend the following additional connection parameters for performance, setting for uncommited read ("dirty" read):
 
 ```bash
 defaultIsolationLevel=1;
 ```
-for uncommited read ("dirty" read), and
+and
 
 ```bash
 readOnly=true;

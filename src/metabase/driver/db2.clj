@@ -128,7 +128,7 @@
 (defmethod sql.qp/date [:db2 :month]          [_ _ expr] (str-to-date "YYYY-MM-DD" (hx/concat (date-format "YYYY-MM" expr) (hx/literal "-01"))))
 (defmethod sql.qp/date [:db2 :month-of-year]  [_ _ expr] (hsql/call :month expr))
 (defmethod sql.qp/date [:db2 :quarter]        [_ _ expr] (str-to-date "YYYY-MM-DD" (hsql/raw (format "%d-%d-01" (int (hx/year expr)) (int ((hx/- (hx/* (hx/quarter expr) 3) 2)))))))
-(defmethod sql.qp/date [:db2 :year]           [_ _ expr] (hsql/call :year expr))
+(defmethod sql.qp/date [:db2 :year]           [_ _ expr] (hsql/call :date expr))
 (defmethod sql.qp/date [:db2 :week-of-year]   [_ _ expr] (hsql/call :week expr))
 (defmethod sql.qp/date [:db2 :day-of-week]     [driver _ expr] (hsql/call :dayofweek expr))
 (defmethod sql.qp/date [:db2 :day-of-year]     [driver _ expr] (hsql/call :dayofyear expr))
