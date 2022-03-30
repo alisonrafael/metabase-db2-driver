@@ -74,15 +74,15 @@
     message))
 
 ;; Additional options: https://www.ibm.com/support/knowledgecenter/en/SSEPGG_9.7.0/com.ibm.db2.luw.apdv.java.doc/src/tpc/imjcc_r0052038.html
-(defmethod driver/connection-properties :db2 [_]
-  (ssh/with-tunnel-config
-    [driver.common/default-host-details
-     driver.common/default-port-details
-     driver.common/default-dbname-details
-     driver.common/default-user-details
-     driver.common/default-password-details
-     driver.common/default-ssl-details
-     driver.common/default-additional-options-details]))
+;;(defmethod driver/connection-properties :db2 [_]
+;;  (ssh/with-tunnel-config
+;;    [driver.common/default-host-details
+;;     driver.common/default-port-details
+;;     driver.common/default-dbname-details
+;;     driver.common/default-user-details
+;;     driver.common/default-password-details
+;;     driver.common/default-ssl-details
+;;     driver.common/default-additional-options-details]))
 
 ;; Needs improvements and tests
 (defmethod driver.common/current-db-time-date-formatters :db2 [_]
