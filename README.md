@@ -92,7 +92,7 @@ You can run as follows to avoid the CharConversionException exceptions. By this 
 java -Ddb2.jcc.charsetDecoderEncoder=3 -jar metabase.jar
 ```
 
-Use this additional JDBC properties for performance, uncommitted read ("dirty" read):
+Use these additional JDBC properties for performance, uncommitted read ("dirty" read):
 
 ```bash
 defaultIsolationLevel=1;readOnly=true;

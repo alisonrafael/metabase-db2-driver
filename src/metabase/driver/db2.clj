@@ -284,7 +284,7 @@
               :subprotocol "db2"
               :subname     (str "//" host ":" port "/" dbname ":" )}
              (dissoc details :host :port :dbname :ssl))
-      (sql-jdbc.common/handle-additional-options details, :seperator-style :semicolon)))
+      (sql-jdbc.common/handle-additional-options details, :separator-style :semicolon)))
 
 (defmethod driver/can-connect? :db2 [driver details]
   (let [connection (sql-jdbc.conn/connection-details->spec driver (ssh/include-ssh-tunnel! details))]
