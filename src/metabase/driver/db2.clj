@@ -9,6 +9,7 @@
             [java-time :as t]
             [metabase.driver :as driver]
             [metabase.driver.common :as driver.common]
+            [metabase.driver.sql :as driver.sql]
             [metabase.driver.sql
              [query-processor :as sql.qp]
              [util :as sql.u]]
@@ -19,6 +20,7 @@
              [execute :as sql-jdbc.execute]
              [common :as sql-jdbc.common]
              [sync :as sql-jdbc.sync]]
+            [metabase.driver.sql.parameters.substitution :as sql.params.substitution]
             [metabase.driver.sql.util.unprepare :as unprepare]
             [metabase.util
              [date-2 :as du]
@@ -31,9 +33,10 @@
            java.util.Date)
   (:import java.sql.Time
            [java.util Date UUID])
-  (:import [java.sql ResultSet Time Timestamp Types]
-           [java.util Calendar Date TimeZone]
-           [java.time Instant LocalDateTime OffsetDateTime OffsetTime ZonedDateTime LocalDate LocalTime]
+  (:import (java.sql ResultSet Time Timestamp Types)
+           (java.util Calendar Date TimeZone)
+           (java.time Instant LocalDateTime OffsetDateTime OffsetTime ZonedDateTime LocalDate LocalTime)
+           (java.time.temporal Temporal)
            org.joda.time.format.DateTimeFormatter))
 
 (driver/register! :db2, :parent :sql-jdbc)
@@ -232,9 +235,18 @@
     (sql.qp/->honeysql driver (t/local-date t))
     [:datetime (h2x/literal (du/format-sql t))]))
 
+;; DB2 doesn't like Temporal values getting passed in as prepared statement args, so we need to convert them to
+;; date literal strings instead to get things to work (fix from sqlite.clj)
+(s/defmethod driver.sql/->prepared-substitution [:db2 Temporal] :- driver.sql/PreparedStatementSubstitution
+  [_driver date]
+  ;; for anything that's a Temporal value convert it to a yyyy-MM-dd formatted date literal string
+  ;; For whatever reason the SQL generated from parameters ends up looking like `WHERE date(some_field) = ?`
+  ;; sometimes so we need to use just the date rather than a full ISO-8601 string
+  (sql.params.substitution/make-stmt-subs "?" [(t/format "yyyy-MM-dd" date)]))
+
 
 ;; (.getObject rs i LocalDate) doesn't seem to work, nor does `(.getDate)`; ;;v0.34.x
-;; Merged from vertica.clj e sqlite.clj. 
+;; Fixes merged from vertica.clj e sqlite.clj. 
 ;; Fix to Invalid data conversion: Wrong result column type for requested conversion. ERRORCODE=-4461
 
 (defmethod sql-jdbc.execute/read-column-thunk [:db2 Types/DATE]
