@@ -110,10 +110,6 @@
   [_driver]
   2)
 
-;(defn- date-format [format-str expr] (::h2x/extract :varchar_format expr (h2x/literal format-str)))
-;(defn- str-to-date [format-str expr] (::h2x/extract :to_date expr (h2x/literal format-str)))
-;(defn- trunc-with-format [format-str expr](str-to-date format-str (date-format format-str expr)))
-
 ;; Wrap a HoneySQL datetime EXPRession in appropriate forms to cast/bucket it as UNIT.
 ;; See [this page](https://www.ibm.com/developerworks/data/library/techarticle/0211yip/0211yip3.html) for details on the functions we're using.
 (defmethod sql.qp/date [:db2 :default]        [_ _ expr] expr)
@@ -139,9 +135,9 @@
     :minute  [:raw (format "%d minutes" (int amount))]
     :hour    [:raw (format "%d hours" (int amount))]
     :day     [:raw (format "%d days" (int amount))]
-    :week    [:raw (format "%d days" (int (h2x/* amount (:raw 7))))]
+    :week    [:raw (format "%d days" (int (* amount 7)))]
     :month   [:raw (format "%d months" (int amount))]
-    :quarter [:raw (format "%d months" (int (h2x/* amount (:raw 3))))]
+    :quarter [:raw (format "%d months" (int (* amount 3)))]
     :year    [:raw (format "%d years" (int amount))]
   )))
 
@@ -149,7 +145,7 @@
   (h2x/+ [:raw "timestamp('1970-01-01 00:00:00')"] [:raw (format "%d seconds" (int expr))])
 
 (defmethod sql.qp/unix-timestamp->honeysql [:db2 :milliseconds] [driver _ expr]
-  (h2x/+ [:raw "timestamp('1970-01-01 00:00:00')"] [:raw (format "%d seconds" (int (h2x// expr 1000)))])))
+  (h2x/+ [:raw "timestamp('1970-01-01 00:00:00')"] [:raw (format "%d seconds" (int (/ expr 1000)))])))
 
 (def ^:private now [:raw "current timestamp"])
 
