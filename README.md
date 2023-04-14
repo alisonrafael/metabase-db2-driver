@@ -54,6 +54,8 @@ yarn --version
 
 Clone the [Metabase repo](https://github.com/metabase/metabase) first if you haven't already done so.
 
+Inside `/metabase_source` run "clojure -X:deps prep" after clone or pull.
+
 ### Clone the DB2 Metabase Driver
 
 Clone this [DB2 driver repo](https://github.com/alisonrafael/metabase-db2-driver) inside drivers modules folder `/metabase_source/modules/drivers` and rename this repo folder to 'db2' only.

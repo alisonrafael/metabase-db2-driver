@@ -6,39 +6,37 @@
              [coerce :as tcoerce]
              [core :as tc]
              [format :as time]]
-            [honeysql
-             [core :as hsql]
-             [format :as hformat]]
             [java-time :as t]
             [metabase.driver :as driver]
             [metabase.driver.common :as driver.common]
-            [metabase.query-processor
-             [store :as qp.store]
-             [util :as qputil]]
+            [metabase.driver.sql :as driver.sql]
             [metabase.driver.sql
              [query-processor :as sql.qp]
              [util :as sql.u]]
+            [metabase.driver.impl :as driver.impl]
+            [metabase.query-processor.timezone :as qp.timezone]
             [metabase.driver.sql-jdbc
              [connection :as sql-jdbc.conn]
              [execute :as sql-jdbc.execute]
              [common :as sql-jdbc.common]
              [sync :as sql-jdbc.sync]]
+            [metabase.driver.sql.parameters.substitution :as sql.params.substitution]
             [metabase.driver.sql.util.unprepare :as unprepare]
             [metabase.util
              [date-2 :as du]
-             [honeysql-extensions :as hx]
-             [ssh :as ssh]]
+             [honey-sql-2 :as h2x]
+             [ssh :as ssh]
+             [log :as log]]
             [metabase.driver.sql :as sql]
-            [metabase.query-processor.timezone :as qp.timezone]
             [schema.core :as s])
   (:import [java.sql ResultSet Types]
            java.util.Date)
   (:import java.sql.Time
            [java.util Date UUID])
-  (:import [java.sql ResultSet Time Timestamp Types]
-           [java.util Calendar Date TimeZone]
-           [java.time Instant LocalDateTime OffsetDateTime OffsetTime ZonedDateTime LocalDate LocalTime]
-           metabase.util.honeysql_extensions.Literal
+  (:import (java.sql ResultSet Time Timestamp Types)
+           (java.util Calendar Date TimeZone)
+           (java.time Instant LocalDateTime OffsetDateTime OffsetTime ZonedDateTime LocalDate LocalTime)
+           (java.time.temporal Temporal)
            org.joda.time.format.DateTimeFormatter))
 
 (driver/register! :db2, :parent :sql-jdbc)
@@ -111,48 +109,48 @@
 ;;; |                                           metabase.driver.sql impls                                            |
 ;;; +----------------------------------------------------------------------------------------------------------------+
 
-(defn- date-format [format-str expr] (hsql/call :varchar_format expr (hx/literal format-str)))
-(defn- str-to-date [format-str expr] (hsql/call :to_date expr (hx/literal format-str)))
-(defn- trunc-with-format [format-str expr](str-to-date format-str (date-format format-str expr)))
+(defmethod sql.qp/honey-sql-version :db2
+  [_driver]
+  2)
 
 ;; Wrap a HoneySQL datetime EXPRession in appropriate forms to cast/bucket it as UNIT.
 ;; See [this page](https://www.ibm.com/developerworks/data/library/techarticle/0211yip/0211yip3.html) for details on the functions we're using.
 (defmethod sql.qp/date [:db2 :default]        [_ _ expr] expr)
-(defmethod sql.qp/date [:db2 :minute]         [_ _ expr] (trunc-with-format "YYYY-MM-DD HH24:MI" expr))
-(defmethod sql.qp/date [:db2 :minute-of-hour] [_ _ expr] (hsql/call :minute expr))
-(defmethod sql.qp/date [:db2 :hour]           [_ _ expr] (trunc-with-format "YYYY-MM-DD HH24" expr))
-(defmethod sql.qp/date [:db2 :hour-of-day]    [_ _ expr] (hsql/call :hour expr))
-(defmethod sql.qp/date [:db2 :day]            [_ _ expr] (hsql/call :date expr))
-(defmethod sql.qp/date [:db2 :day-of-month]   [_ _ expr] (hsql/call :day expr))
-(defmethod sql.qp/date [:db2 :week]           [_ _ expr] (hx/- expr (hsql/raw (format "%d days" (int (hx/- (hsql/call :dayofweek expr) 1))))))
-(defmethod sql.qp/date [:db2 :month]          [_ _ expr] (str-to-date "YYYY-MM-DD" (hx/concat (date-format "YYYY-MM" expr) (hx/literal "-01"))))
-(defmethod sql.qp/date [:db2 :month-of-year]  [_ _ expr] (hsql/call :month expr))
-(defmethod sql.qp/date [:db2 :quarter]        [_ _ expr] (str-to-date "YYYY-MM-DD" (hsql/raw (format "%d-%d-01" (int (hx/year expr)) (int ((hx/- (hx/* (hx/quarter expr) 3) 2)))))))
-(defmethod sql.qp/date [:db2 :year]           [_ _ expr] (hsql/call :date expr))
-(defmethod sql.qp/date [:db2 :week-of-year]   [_ _ expr] (hsql/call :week expr))
-(defmethod sql.qp/date [:db2 :day-of-week]     [driver _ expr] (hsql/call :dayofweek expr))
-(defmethod sql.qp/date [:db2 :day-of-year]     [driver _ expr] (hsql/call :dayofyear expr))
-(defmethod sql.qp/date [:db2 :quarter-of-year] [driver _ expr] (hsql/call :quarter expr))
+(defmethod sql.qp/date [:db2 :minute]         [_ _ expr] (::h2x/extract :minute expr))
+(defmethod sql.qp/date [:db2 :minute-of-hour] [_ _ expr] (::h2x/extract :minute expr))
+(defmethod sql.qp/date [:db2 :hour]           [_ _ expr] (::h2x/extract :hour expr))
+(defmethod sql.qp/date [:db2 :hour-of-day]    [_ _ expr] (::h2x/extract :hour expr))
+(defmethod sql.qp/date [:db2 :day]            [_ _ expr] (::h2x/extract :date expr))
+(defmethod sql.qp/date [:db2 :day-of-month]   [_ _ expr] (::h2x/extract :day expr))
+(defmethod sql.qp/date [:db2 :week]           [_ _ expr] (::h2x/extract :week expr))
+(defmethod sql.qp/date [:db2 :month]          [_ _ expr] (::h2x/extract :month expr))
+(defmethod sql.qp/date [:db2 :month-of-year]  [_ _ expr] (::h2x/extract :month expr))
+(defmethod sql.qp/date [:db2 :quarter]        [_ _ expr] (::h2x/extract :quarter expr))
+(defmethod sql.qp/date [:db2 :year]           [_ _ expr] (::h2x/extract :date expr))
+(defmethod sql.qp/date [:db2 :week-of-year]   [_ _ expr] (::h2x/extract :week expr))
+(defmethod sql.qp/date [:db2 :day-of-week]     [driver _ expr] (::h2x/extract :dayofweek expr))
+(defmethod sql.qp/date [:db2 :day-of-year]     [driver _ expr] (::h2x/extract :dayofyear expr))
+(defmethod sql.qp/date [:db2 :quarter-of-year] [driver _ expr] (::h2x/extract :quarter expr))
 
 (defmethod sql.qp/add-interval-honeysql-form :db2 [_ hsql-form amount unit]
-  (hx/+ (hx/->timestamp hsql-form) (case unit
-    :second  (hsql/raw (format "%d seconds" (int amount)))
-    :minute  (hsql/raw (format "%d minutes" (int amount)))
-    :hour    (hsql/raw (format "%d hours" (int amount)))
-    :day     (hsql/raw (format "%d days" (int amount)))
-    :week    (hsql/raw (format "%d days" (int (hx/* amount (hsql/raw 7)))))
-    :month   (hsql/raw (format "%d months" (int amount)))
-    :quarter (hsql/raw (format "%d months" (int (hx/* amount (hsql/raw 3)))))
-    :year    (hsql/raw (format "%d years" (int amount)))
+  (h2x/+ (h2x/->timestamp hsql-form) (case unit
+    :second  [:raw (format "%d seconds" (int amount))]
+    :minute  [:raw (format "%d minutes" (int amount))]
+    :hour    [:raw (format "%d hours" (int amount))]
+    :day     [:raw (format "%d days" (int amount))]
+    :week    [:raw (format "%d days" (int (* amount 7)))]
+    :month   [:raw (format "%d months" (int amount))]
+    :quarter [:raw (format "%d months" (int (* amount 3)))]
+    :year    [:raw (format "%d years" (int amount))]
   )))
 
 (defmethod sql.qp/unix-timestamp->honeysql [:db2 :seconds] [_ _ expr]
-  (hx/+ (hsql/raw "timestamp('1970-01-01 00:00:00')") (hsql/raw (format "%d seconds" (int expr))))
+  (h2x/+ [:raw "timestamp('1970-01-01 00:00:00')"] [:raw (format "%d seconds" (int expr))])
 
 (defmethod sql.qp/unix-timestamp->honeysql [:db2 :milliseconds] [driver _ expr]
-  (hx/+ (hsql/raw "timestamp('1970-01-01 00:00:00')") (hsql/raw (format "%d seconds" (int (hx// expr 1000)))))))
+  (h2x/+ [:raw "timestamp('1970-01-01 00:00:00')"] [:raw (format "%d seconds" (int (/ expr 1000)))])))
 
-(def ^:private now (hsql/raw "current timestamp"))
+(def ^:private now [:raw "current timestamp"])
 
 (defmethod sql.qp/current-datetime-honeysql-form :db2 [_] now)
 
@@ -170,7 +168,7 @@
    :from   [(-> (merge {:select [:*]}
                        honeysql-query)
                 (update :select sql.u/select-clause-deduplicate-aliases))]
-   :fetch  [(hsql/raw (format "FIRST %d ROWS ONLY" value))]})
+   :fetch  [:raw value]})
 
 (defmethod sql.qp/apply-top-level-clause [:db2 :page]
   [driver _ honeysql-query {{:keys [items page]} :page}]
@@ -180,11 +178,11 @@
       (sql.qp/apply-top-level-clause driver :limit honeysql-query {:limit items})
       ;; if we need to do an offset we have to do double-nesting
       {:select [:*]
-       :from   [{:select [:tmp.* [(hsql/raw "ROW_NUMBER() OVER()") :rn]]
+       :from   [{:select [:tmp.* [[:raw "ROW_NUMBER() OVER()"] :rn]]
                  :from   [[(merge {:select [:*]}
                                   honeysql-query)
                            :tmp]]}]
-       :where  [(hsql/raw (format "rn BETWEEN %d AND %d" offset (+ offset items)))]})))
+       :where  [:raw (format "rn BETWEEN %d AND %d" offset (+ offset items))]})))
 
 ;;; +----------------------------------------------------------------------------------------------------------------+
 ;;; |                                           metabase.driver.sql date workarounds                                 |
@@ -195,12 +193,12 @@
 ;; Maybe it could not to be necessary with the use of DB2_DEFERRED_PREPARE_SEMANTICS
 (defmethod sql.qp/->honeysql [:db2 Date]
   [_ date]
-  		(hx/->timestamp (t/format "yyyy-MM-dd HH:mm:ss" date))) ;;v0.34.x needs it?
-  ;;(hx/->timestamp (du/format-date "yyyy-MM-dd HH:mm:ss" date))) ;;v0.33.x
+  		(h2x/->timestamp (t/format "yyyy-MM-dd HH:mm:ss" date))) ;;v0.34.x needs it?
 
 (defmethod sql.qp/->honeysql [:db2 Timestamp]
   [_ date]
-  		(hx/->timestamp (t/format "yyyy-MM-dd HH:mm:ss" date)))
+  		(h2x/->timestamp (t/format "yyyy-MM-dd HH:mm:ss" date)))
+
 
 ;; MEGA HACK from sqlite.clj ;;v0.34.x
 ;; Fix to Unrecognized JDBC type: 2014. ERRORCODE=-4228 
@@ -209,54 +207,71 @@
 
 (defmethod sql.qp/->honeysql [:db2 LocalDate]
   [_ t]
-  (hsql/call :date (hx/literal (du/format-sql t))))
+  [:date (h2x/literal (du/format-sql t))])
 
 (defmethod sql.qp/->honeysql [:db2 LocalDateTime]
   [driver t]
   (if (zero-time? t)
     (sql.qp/->honeysql driver (t/local-date t))
-    (hsql/call :datetime (hx/literal (du/format-sql t)))))
+    [:datetime (h2x/literal (du/format-sql t))]))
 
 (defmethod sql.qp/->honeysql [:db2 LocalTime]
   [_ t]
-  (hsql/call :time (hx/literal (du/format-sql t))))
+  [:time (h2x/literal (du/format-sql t))])
 
 (defmethod sql.qp/->honeysql [:db2 OffsetDateTime]
   [driver t]
   (if (zero-time? t)
     (sql.qp/->honeysql driver (t/local-date t))
-    (hsql/call :datetime (hx/literal (du/format-sql t)))))
+    [:datetime (h2x/literal (du/format-sql t))]))
 
 (defmethod sql.qp/->honeysql [:db2 OffsetTime]
   [_ t]
-  (hsql/call :time (hx/literal (du/format-sql t))))
+  [:time (h2x/literal (du/format-sql t))])
 
 (defmethod sql.qp/->honeysql [:db2 ZonedDateTime]
   [driver t]
   (if (zero-time? t)
     (sql.qp/->honeysql driver (t/local-date t))
-    (hsql/call :datetime (hx/literal (du/format-sql t)))))
+    [:datetime (h2x/literal (du/format-sql t))]))
+
+;; DB2 doesn't like Temporal values getting passed in as prepared statement args, so we need to convert them to
+;; date literal strings instead to get things to work (fix from sqlite.clj)
+(s/defmethod driver.sql/->prepared-substitution [:db2 Temporal] :- driver.sql/PreparedStatementSubstitution
+  [_driver date]
+  ;; for anything that's a Temporal value convert it to a yyyy-MM-dd formatted date literal string
+  ;; For whatever reason the SQL generated from parameters ends up looking like `WHERE date(some_field) = ?`
+  ;; sometimes so we need to use just the date rather than a full ISO-8601 string
+  (sql.params.substitution/make-stmt-subs "?" [(t/format "yyyy-MM-dd" date)]))
+
 
 ;; (.getObject rs i LocalDate) doesn't seem to work, nor does `(.getDate)`; ;;v0.34.x
-;; Merged from vertica.clj e sqlite.clj. 
+;; Fixes merged from vertica.clj e sqlite.clj. 
 ;; Fix to Invalid data conversion: Wrong result column type for requested conversion. ERRORCODE=-4461
-(defmethod sql-jdbc.execute/read-column [:db2 Types/DATE]
-		[_ _ ^ResultSet rs _ ^Integer i]
-		  (let [s (.getString rs i)
-		        t (du/parse s)]
-		    t))
 
-(defmethod sql-jdbc.execute/read-column [:db2 Types/TIME]
-		[_ _ ^ResultSet rs _ ^Integer i]
-		  (let [s (.getString rs i)
-		        t (du/parse s)]
-		    t))
+(defmethod sql-jdbc.execute/read-column-thunk [:db2 Types/DATE]
+  [_driver ^ResultSet rs _rsmeta ^Integer i]
+  (fn []
+    (when-let [s (.getString rs i)]
+      (let [t (du/parse s)]
+        (log/tracef "(.getString rs %d) [DATE] -> %s -> %s" i s t)
+        t))))
 
-(defmethod sql-jdbc.execute/read-column [:db2 Types/TIMESTAMP]
-		[_ _ ^ResultSet rs _ ^Integer i]
-		  (let [s (.getString rs i)
-		        t (du/parse s)]
-		    t))
+(defmethod sql-jdbc.execute/read-column-thunk [:db2 Types/TIME]
+  [_driver ^ResultSet rs _rsmeta ^Long i]
+  (fn read-time []
+    (when-let [s (.getString rs i)]
+      (let [t (du/parse s)]
+        (log/tracef "(.getString rs %d) [TIME] -> %s -> %s" i s t)
+        t))))
+
+(defmethod sql-jdbc.execute/read-column-thunk [:db2 Types/TIMESTAMP]
+  [_driver ^ResultSet rs _rsmeta ^Integer i]
+  (fn []
+    (when-let [s (.getString rs i)]
+      (let [t (du/parse s)]
+        (log/tracef "(.getString rs %d) [TIMESTAMP] -> %s -> %s" i s t)
+        t))))
 
 ;;; +----------------------------------------------------------------------------------------------------------------+
 ;;; |                                         metabase.driver.sql-jdbc impls                                         |
