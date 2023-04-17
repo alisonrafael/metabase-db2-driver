@@ -1,9 +1,10 @@
-
-
-
 # Metabase Driver: DB2
 
-DB2 Driver for Metabase v0.46.x, working with DB2 9.7 for LUW (Linux, UNIX, Windows) with no use of DB2_COMPATIBILITY_VECTOR and no DB2_DEFERRED_PREPARE_SEMANTICS. 
+DB2 for LUW (Linux, UNIX, Windows) Driver for Metabase v0.46.
+
+Registry variable settings:
+DB2_COMPATIBILITY_VECTOR=NULL
+DB2_DEFERRED_PREPARE_SEMANTICS=NO
 
 ###  Running Metabase application with DB2 driver plugin
 First download Metabase .jar file [here](https://metabase.com/start/other.html)  and run
@@ -86,7 +87,7 @@ jar -jar /path/to/metabase/metabase.jar
 
 ## Configurations
 
-You can run as follows to avoid the CharConversionException exceptions. By this way, JCC converts invalid characters to NULL instead of throwing exceptions:
+You can run as follows to avoid the CharConversionException exceptions. In this way, JCC converts invalid characters to NULL instead of throwing exceptions:
 
 ```bash
 java -Ddb2.jcc.charsetDecoderEncoder=3 -jar metabase.jar
