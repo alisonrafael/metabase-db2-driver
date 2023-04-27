@@ -1,11 +1,7 @@
 
 # Metabase Driver: DB2
 
-DB2 for LUW (Linux, UNIX, Windows) Driver for Metabase v0.46.
-
-Registry variable settings:
-DB2_COMPATIBILITY_VECTOR=NULL
-DB2_DEFERRED_PREPARE_SEMANTICS=NO
+DB2 for LUW (Linux, UNIX, Windows) Driver for [Metabase](https://www.metabase.com).
 
 ###  Versions
 | Metabase Version | DB2 Driver | Bugs |
@@ -21,43 +17,13 @@ java -jar metabase.jar
 ```
 The `plugins/` directory will be created. Drop the driver in your `plugins/` directory and run metabase again. You can grab it [here](https://github.com/alisonrafael/metabase-db2-driver/releases) or build it yourself:
 
-##  Editing the plugin: Prerequisites
+## Building the DB2 Driver Yourself
 
-### Java JDK 11
-Check java, javac and jar installation
-```bash
-java -version
-javac -version
-jar
-```
-
-### Node.js
-Install [Node.js](https://nodejs.org/)
-```bash
-sudo apt-get install curl
-curl -fsSL https://deb.nodesource.com/setup_19.x | sudo -E bash - &&\
-sudo apt-get install -y nodejs
-node -v 
-```
-
-### Clojure
-Install [Clojure](https://clojure.org/guides/getting_started)
-```bash
-curl -O https://download.clojure.org/install/linux-install-1.11.1.1182.sh 
-chmod +x linux-install-1.11.1.1182.sh 
-sudo ./linux-install-1.11.1.1182.sh
-```
-
-### Yarn
-Install [Yarn](https://yarnpkg.com/lang/en/)
-```bash
-curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-sudo apt-get update && sudo apt-get install yarn
-yarn --version
-```
-
-## Editing the plugin: Building the driver 
+### Prerequisites
+- Java JDK 11
+- Node.js
+- Clojure
+- Yarn
 
 ### Clone the Metabase project
 
@@ -95,16 +61,10 @@ jar -jar /path/to/metabase/metabase.jar
 
 ## Configurations
 
-You can run as follows to avoid the CharConversionException exceptions. In this way, JCC converts invalid characters to NULL instead of throwing exceptions:
+Run as follows to avoid the CharConversionException exceptions. In this way, JCC converts invalid characters to NULL instead of throwing exceptions:
 
 ```bash
 java -Ddb2.jcc.charsetDecoderEncoder=3 -jar metabase.jar
-```
-
-Use these additional JDBC properties for performance, uncommitted read ("dirty" read):
-
-```bash
-defaultIsolationLevel=1;readOnly=true;
 ```
 
 ## Thanks
