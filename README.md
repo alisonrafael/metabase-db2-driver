@@ -1,3 +1,4 @@
+
 # Metabase Driver: DB2
 
 DB2 for LUW (Linux, UNIX, Windows) Driver for Metabase v0.46.
@@ -6,12 +7,19 @@ Registry variable settings:
 DB2_COMPATIBILITY_VECTOR=NULL
 DB2_DEFERRED_PREPARE_SEMANTICS=NO
 
+###  Versions
+| Metabase Version | DB2 Driver | Bugs |
+| --- | --- | --- |
+| 0.46 | 1.1.46 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.46/db2.metabase-driver.jar)) | - Schema/Table synchronization from metadata is not working. Attention: this cause a poor experience in Metabase. Please, use the previous version. |
+| 0.45 | 1.1.44 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.44/db2.metabase-driver.jar)) | - Date Variables in Native Query do not work;<br /> - Date filters by Week and Quarter do not work; |
+| Older versions | See [here](https://github.com/alisonrafael/metabase-db2-driver/releases) | - Date Variables in Native Query do not work; <br /> - Date filters by Week and Quarter do not work; |
+
 ###  Running Metabase application with DB2 driver plugin
 First download Metabase .jar file [here](https://metabase.com/start/other.html)  and run
 ```bash
 java -jar metabase.jar
 ```
-The `plugins/` directory will be created. Drop the driver in your `plugins/` directory and run metabase again. You can grab it [here](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.46/db2.metabase-driver.jar) or build it yourself:
+The `plugins/` directory will be created. Drop the driver in your `plugins/` directory and run metabase again. You can grab it [here](https://github.com/alisonrafael/metabase-db2-driver/releases) or build it yourself:
 
 ##  Editing the plugin: Prerequisites
 
