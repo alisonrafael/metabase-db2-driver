@@ -1,6 +1,7 @@
 (ns metabase.driver.db2
   "Driver for DB2 for LUW databases."
   (:require [clojure.java.jdbc :as jdbc]
+            [clojure.set :as set]
             [clojure.string :as str]
             [clj-time
              [coerce :as tcoerce]
@@ -26,14 +27,15 @@
              [date-2 :as du]
              [honey-sql-2 :as h2x]
              [ssh :as ssh]
-             [log :as log]]
+             [log :as log]
+             [i18n :refer [trs]]]
             [metabase.driver.sql :as sql]
             [schema.core :as s])
   (:import [java.sql ResultSet Types]
            java.util.Date)
   (:import java.sql.Time
            [java.util Date UUID])
-  (:import (java.sql ResultSet Time Timestamp Types)
+  (:import (java.sql ResultSet ResultSetMetaData Time Timestamp Types)
            (java.util Calendar Date TimeZone)
            (java.time Instant LocalDateTime OffsetDateTime OffsetTime ZonedDateTime LocalDate LocalTime)
            (java.time.temporal Temporal)
@@ -345,3 +347,16 @@
 
 (defmethod sql-jdbc.execute/set-timezone-sql :db2 [_]
   "SET SESSION TIME ZONE = %s")
+
+(defn- materialized-views
+  "Fetch the Materialized Views DB2 for LUW"
+  [database]  
+  (try (set (jdbc/query (sql-jdbc.conn/db->pooled-connection-spec database)
+      ["SELECT TABSCHEMA AS \"schema\", TABNAME AS \"name\", REMARKS AS \"description\" FROM SYSCAT.TABLES ORDER BY 1, 2"]))
+       (catch Throwable e
+         (log/error e (trs "Failed to fetch materialized views for DB2 for LUW")))))
+
+(defmethod driver/describe-database :db2
+  [driver database]
+  (-> ((get-method driver/describe-database :sql-jdbc) driver database)
+      (update :tables set/union (materialized-views database))))
