@@ -160,6 +160,13 @@
   [_ bool]
   (if bool 1 0))
 
+(defmethod sql.qp/->honeysql [:db2 :substring]
+  [driver [_ arg start length]]
+  		(if length
+    	[:substr (sql.qp/->honeysql driver arg) (sql.qp/->honeysql driver start) [:min [:length (sql.qp/->honeysql driver arg)] (sql.qp/->honeysql driver length)]]
+    	[:substr (sql.qp/->honeysql driver arg) (sql.qp/->honeysql driver start)]))
+
+
 ;; Use LIMIT OFFSET support DB2 v9.7 https://www.ibm.com/developerworks/community/blogs/SQLTips4DB2LUW/entry/limit_offset?lang=en
 ;; Maybe it could not to be necessary with the use of DB2_COMPATIBILITY_VECTOR
 (defmethod sql.qp/apply-top-level-clause [:db2 :limit]
