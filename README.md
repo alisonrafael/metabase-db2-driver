@@ -6,9 +6,8 @@ DB2 for LUW (Linux, UNIX, Windows) Driver for [Metabase](https://www.metabase.co
 ###  Versions
 | Metabase Version | DB2 Driver | Bugs |
 | --- | --- | --- |
-| 0.46 | 1.1.46.1 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.46.1/db2.metabase-driver.jar)) | |
-| 0.45 | 1.1.44 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.44/db2.metabase-driver.jar)) | - Date Variables in Native Query do not work;<br /> - Date filters by Week and Quarter do not work; |
-| Older versions | See [here](https://github.com/alisonrafael/metabase-db2-driver/releases) | - Date Variables in Native Query do not work; <br /> - Date filters by Week and Quarter do not work; |
+| 0.46 | 1.1.46.2 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.46.2/db2.metabase-driver.jar)) | |
+| Older versions | See [here](https://github.com/alisonrafael/metabase-db2-driver/releases) | See release details |
 
 ###  Running Metabase application with DB2 driver plugin
 First download Metabase .jar file [here](https://metabase.com/start/other.html)  and run
