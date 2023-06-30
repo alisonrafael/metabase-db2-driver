@@ -325,7 +325,7 @@
     :TIMESTAMP    :type/DateTime
     :VARCHAR      :type/Text
     :VARGRAPHIC   :type/Text
-    :XML          :type/Text
+    :XML          :type/*
     (keyword "CHAR () FOR BIT DATA")      :type/*
     (keyword "CHAR() FOR BIT DATA") :type/*
     (keyword "LONG VARCHAR")              :type/*
