@@ -282,6 +282,12 @@
         (log/tracef "(.getString rs %d) [TIMESTAMP] -> %s -> %s" i s t)
         t))))
 
+;; instead of returning a CLOB object, return the String
+(defmethod sql-jdbc.execute/read-column-thunk [:db2 Types/CLOB]
+  [_driver ^ResultSet rs _rsmeta ^Integer i]
+  (fn []
+    (.getString rs i)))
+
 ;;; +----------------------------------------------------------------------------------------------------------------+
 ;;; |                                         metabase.driver.sql-jdbc impls                                         |
 ;;; +----------------------------------------------------------------------------------------------------------------+
@@ -359,7 +365,7 @@
   "Fetch the Materialized Views DB2 for LUW"
   [database]  
   (try (set (jdbc/query (sql-jdbc.conn/db->pooled-connection-spec database)
-      ["SELECT TABSCHEMA AS \"schema\", TABNAME AS \"name\", REMARKS AS \"description\" FROM SYSCAT.TABLES ORDER BY 1, 2"]))
+      ["SELECT trim(TABSCHEMA) AS \"schema\", trim(TABNAME) AS \"name\", trim(REMARKS) AS \"description\" FROM SYSCAT.TABLES ORDER BY 1, 2"]))
        (catch Throwable e
          (log/error e (trs "Failed to fetch materialized views for DB2 for LUW")))))
 
