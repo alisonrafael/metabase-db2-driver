@@ -1,47 +1,48 @@
 (ns metabase.driver.db2
   "Driver for DB2 for LUW databases."
-  (:require [clojure.java.jdbc :as jdbc]
-            [clojure.set :as set]
-            [clojure.string :as str]
-            [clj-time
-             [coerce :as tcoerce]
-             [core :as tc]
-             [format :as time]]
-            [java-time :as t]
-            [metabase.driver :as driver]
-            [metabase.driver.common :as driver.common]
-            [metabase.driver.sql :as driver.sql]
-            [metabase.driver.sql
-             [query-processor :as sql.qp]
-             [util :as sql.u]]
-            [metabase.driver.impl :as driver.impl]
-            [metabase.query-processor.timezone :as qp.timezone]
-            [metabase.driver.sql-jdbc
-             [connection :as sql-jdbc.conn]
-             [execute :as sql-jdbc.execute]
-             [common :as sql-jdbc.common]
-             [sync :as sql-jdbc.sync]]
-            [metabase.driver.sql.parameters.substitution :as sql.params.substitution]
-            [metabase.driver.sql.util.unprepare :as unprepare]
-            [metabase.util
-             [date-2 :as du]
-             [honey-sql-2 :as h2x]
-             [ssh :as ssh]
-             [log :as log]
-             [i18n :refer [trs]]]
-            [metabase.driver.sql :as sql]
-            [schema.core :as s])
+  (:require
+   [clojure.java.jdbc :as jdbc]
+   [clojure.string :as str]
+   [java-time.api :as t]
+   [metabase.driver :as driver]
+   [metabase.driver.sql :as driver.sql]
+   [metabase.driver.sql-jdbc.common :as sql-jdbc.common]
+   [metabase.driver.sql-jdbc.connection :as sql-jdbc.conn]
+   [metabase.driver.sql-jdbc.execute :as sql-jdbc.execute]
+   [metabase.driver.sql-jdbc.sync :as sql-jdbc.sync]
+   [metabase.driver.sql.parameters.substitution :as sql.params.substitution]
+   [metabase.driver.sql.query-processor :as sql.qp]
+   [metabase.driver.sql.util :as sql.u]
+   [metabase.util.date-2 :as u.date]
+   [metabase.util.honey-sql-2 :as h2x]
+   [metabase.util.log :as log]
+   [metabase.util.ssh :as ssh]
+   [schema.core :as s]
+   )
   (:import [java.sql ResultSet Types]
            java.util.Date)
-  (:import java.sql.Time
-           [java.util Date UUID])
-  (:import (java.sql ResultSet ResultSetMetaData Time Timestamp Types)
-           (java.util Calendar Date TimeZone)
-           (java.time Instant LocalDateTime OffsetDateTime OffsetTime ZonedDateTime LocalDate LocalTime)
+  (:import (java.sql ResultSet Timestamp Types)
+           (java.util Date )
+           (java.time LocalDateTime OffsetDateTime OffsetTime ZonedDateTime LocalDate LocalTime)
            (java.time.temporal Temporal)
-           org.joda.time.format.DateTimeFormatter))
+           ))
+
+(set! *warn-on-reflection* true)
 
 (driver/register! :db2, :parent :sql-jdbc)
+
+(doseq [[feature supported?] {:connection-impersonation  false
+                              ;; `metabase.driver/describe-fields` must be implemented instead of `metabase.driver/describe-table`
+                              :describe-fields           true
+                              ;; `metabase.driver/describe-fks` must be implemented instead of `metabase.driver/describe-table-fks`
+                              :describe-fks              true
+                              :native-parameters         false
+                              :upload-with-auto-pk       true
+                              :uuid-type                 false
+                              :identifiers-with-spaces   false
+                              :nested-field-columns      false
+                              :test/jvm-timezone-setting false}]
+  (defmethod driver/database-supports? [:redshift feature] [_driver _feat _db] supported?))
 
 ;;; +----------------------------------------------------------------------------------------------------------------+
 ;;; |                                             metabase.driver impls                                              |
@@ -73,47 +74,9 @@
 
     message))
 
-;; Additional options: https://www.ibm.com/support/knowledgecenter/en/SSEPGG_9.7.0/com.ibm.db2.luw.apdv.java.doc/src/tpc/imjcc_r0052038.html
-;;(defmethod driver/connection-properties :db2 [_]
-;;  (ssh/with-tunnel-config
-;;    [driver.common/default-host-details
-;;     driver.common/default-port-details
-;;     driver.common/default-dbname-details
-;;     driver.common/default-user-details
-;;     driver.common/default-password-details
-;;     driver.common/default-ssl-details
-;;     driver.common/default-additional-options-details]))
-
-;; Needs improvements and tests
-(defmethod driver.common/current-db-time-date-formatters :db2 [_]
-  (mapcat
-   driver.common/create-db-time-formatters
-   ["yyyy-MM-dd HH:mm:ss"
-    "yyyy-MM-dd HH:mm:ss.SSS"
-    "yyyy-MM-dd HH:mm:ss.SSSSS"
-    "yyyy-MM-dd'T'HH:mm:ss.SSS"
-    "yyyy-MM-dd HH:mm:ss.SSSZ"
-    "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-    "yyyy-MM-dd HH:mm:ss.SSSZZ"
-    "yyyy-MM-dd'T'HH:mm:ss.SSSZZ"
-    "yyyy-MM-dd HH:mm:ss.SSSSSSZZ"
-    "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZZ"
-    "yyyy-MM-dd HH:mm:ss.SSSSSSSSSZZ"
-    "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSSZZ"]))
-
-(defmethod driver.common/current-db-time-native-query :db2 [_]
-  "SELECT TO_CHAR(CURRENT TIMESTAMP, 'yyyy-MM-dd HH:mm:ss') FROM SYSIBM.SYSDUMMY1") 
-
-(defmethod driver/current-db-time :db2 [& args]
-  (apply driver.common/current-db-time args))
-
 ;;; +----------------------------------------------------------------------------------------------------------------+
 ;;; |                                           metabase.driver.sql impls                                            |
 ;;; +----------------------------------------------------------------------------------------------------------------+
-
-(defmethod sql.qp/honey-sql-version :db2
-  [_driver]
-  2)
 
 ;; Wrap a HoneySQL datetime EXPRession in appropriate forms to cast/bucket it as UNIT.
 ;; See [this page](https://www.ibm.com/developerworks/data/library/techarticle/0211yip/0211yip3.html) for details on the functions we're using.
@@ -130,9 +93,9 @@
 (defmethod sql.qp/date [:db2 :quarter]        [_ _ expr] (::h2x/extract :quarter expr))
 (defmethod sql.qp/date [:db2 :year]           [_ _ expr] (::h2x/extract :date expr))
 (defmethod sql.qp/date [:db2 :week-of-year]   [_ _ expr] (::h2x/extract :week expr))
-(defmethod sql.qp/date [:db2 :day-of-week]     [driver _ expr] (::h2x/extract :dayofweek expr))
-(defmethod sql.qp/date [:db2 :day-of-year]     [driver _ expr] (::h2x/extract :dayofyear expr))
-(defmethod sql.qp/date [:db2 :quarter-of-year] [driver _ expr] (::h2x/extract :quarter expr))
+(defmethod sql.qp/date [:db2 :day-of-week]     [_ _ expr] (::h2x/extract :dayofweek expr))
+(defmethod sql.qp/date [:db2 :day-of-year]     [_ _ expr] (::h2x/extract :dayofyear expr))
+(defmethod sql.qp/date [:db2 :quarter-of-year] [_ _ expr] (::h2x/extract :quarter expr))
 
 (defmethod sql.qp/add-interval-honeysql-form :db2 [_ hsql-form amount unit]
   (h2x/+ (h2x/->timestamp hsql-form) (case unit
@@ -149,7 +112,7 @@
 (defmethod sql.qp/unix-timestamp->honeysql [:db2 :seconds] [_ _ expr]
   (h2x/+ [:raw "timestamp('1970-01-01 00:00:00')"] [:raw (format "%d seconds" (int expr))])
 
-(defmethod sql.qp/unix-timestamp->honeysql [:db2 :milliseconds] [driver _ expr]
+(defmethod sql.qp/unix-timestamp->honeysql [:db2 :milliseconds] [_ _ expr]
   (h2x/+ [:raw "timestamp('1970-01-01 00:00:00')"] [:raw (format "%d seconds" (int (/ expr 1000)))])))
 
 (def ^:private now [:raw "current timestamp"])
@@ -210,39 +173,39 @@
 
 
 ;; MEGA HACK from sqlite.clj ;;v0.34.x
-;; Fix to Unrecognized JDBC type: 2014. ERRORCODE=-4228 
+;; Fix to Unrecognized JDBC type: 2014. ERRORCODE=-4228
 (defn- zero-time? [t]
   (= (t/local-time t) (t/local-time 0)))
 
 (defmethod sql.qp/->honeysql [:db2 LocalDate]
   [_ t]
-  [:date (h2x/literal (du/format-sql t))])
+  [:date (h2x/literal (u.date/format-sql t))])
 
 (defmethod sql.qp/->honeysql [:db2 LocalDateTime]
   [driver t]
   (if (zero-time? t)
     (sql.qp/->honeysql driver (t/local-date t))
-    [:datetime (h2x/literal (du/format-sql t))]))
+    [:datetime (h2x/literal (u.date/format-sql t))]))
 
 (defmethod sql.qp/->honeysql [:db2 LocalTime]
   [_ t]
-  [:time (h2x/literal (du/format-sql t))])
+  [:time (h2x/literal (u.date/format-sql t))])
 
 (defmethod sql.qp/->honeysql [:db2 OffsetDateTime]
   [driver t]
   (if (zero-time? t)
     (sql.qp/->honeysql driver (t/local-date t))
-    [:datetime (h2x/literal (du/format-sql t))]))
+    [:datetime (h2x/literal (u.date/format-sql t))]))
 
 (defmethod sql.qp/->honeysql [:db2 OffsetTime]
   [_ t]
-  [:time (h2x/literal (du/format-sql t))])
+  [:time (h2x/literal (u.date/format-sql t))])
 
 (defmethod sql.qp/->honeysql [:db2 ZonedDateTime]
   [driver t]
   (if (zero-time? t)
     (sql.qp/->honeysql driver (t/local-date t))
-    [:datetime (h2x/literal (du/format-sql t))]))
+    [:datetime (h2x/literal (u.date/format-sql t))]))
 
 ;; DB2 doesn't like Temporal values getting passed in as prepared statement args, so we need to convert them to
 ;; date literal strings instead to get things to work (fix from sqlite.clj)
@@ -255,14 +218,14 @@
 
 
 ;; (.getObject rs i LocalDate) doesn't seem to work, nor does `(.getDate)`; ;;v0.34.x
-;; Fixes merged from vertica.clj e sqlite.clj. 
+;; Fixes merged from vertica.clj e sqlite.clj.
 ;; Fix to Invalid data conversion: Wrong result column type for requested conversion. ERRORCODE=-4461
 
 (defmethod sql-jdbc.execute/read-column-thunk [:db2 Types/DATE]
   [_driver ^ResultSet rs _rsmeta ^Integer i]
   (fn []
     (when-let [s (.getString rs i)]
-      (let [t (du/parse s)]
+      (let [t (u.date/parse s)]
         (log/tracef "(.getString rs %d) [DATE] -> %s -> %s" i s t)
         t))))
 
@@ -270,7 +233,7 @@
   [_driver ^ResultSet rs _rsmeta ^Long i]
   (fn read-time []
     (when-let [s (.getString rs i)]
-      (let [t (du/parse s)]
+      (let [t (u.date/parse s)]
         (log/tracef "(.getString rs %d) [TIME] -> %s -> %s" i s t)
         t))))
 
@@ -278,7 +241,7 @@
   [_driver ^ResultSet rs _rsmeta ^Integer i]
   (fn []
     (when-let [s (.getString rs i)]
-      (let [t (du/parse s)]
+      (let [t (u.date/parse s)]
         (log/tracef "(.getString rs %d) [TIMESTAMP] -> %s -> %s" i s t)
         t))))
 
@@ -292,58 +255,69 @@
 ;;; |                                         metabase.driver.sql-jdbc impls                                         |
 ;;; +----------------------------------------------------------------------------------------------------------------+
 
-(defmethod sql-jdbc.conn/connection-details->spec :db2 [_ {:keys [host port db dbname]
+(defmethod sql-jdbc.conn/connection-details->spec :db2 [_ {:keys [host port dbname ssl]
                                                            :or   {host "localhost", port 50000, dbname ""}
                                                            :as   details}]
   (-> (merge {:classname   "com.ibm.db2.jcc.DB2Driver"
               :subprotocol "db2"
-              :subname     (str "//" host ":" port "/" dbname ":" )}
+              :subname     (str "//" host ":" port "/" dbname ":readOnly=true;")
+              ;; :enableSslConnection (boolean ssl)
+              :sslConnection (boolean ssl)
+              }
              (dissoc details :host :port :dbname :ssl))
-      (sql-jdbc.common/handle-additional-options details, :separator-style :semicolon)))
+      (sql-jdbc.common/handle-additional-options details, :seperator-style :semicolon)))
 
 (defmethod driver/can-connect? :db2 [driver details]
   (let [connection (sql-jdbc.conn/connection-details->spec driver (ssh/include-ssh-tunnel! details))]
     (= 1 (first (vals (first (jdbc/query connection ["SELECT 1 FROM SYSIBM.SYSDUMMY1"])))))))
 
-;; Mappings for DB2 types to Metabase types.
-;; See the list here: https://docs.tibco.com/pub/spc/4.0.0/doc/html/ibmdb2/ibmdb2_data_types.htm
-(defmethod sql-jdbc.sync/database-type->base-type :db2 [_ database-type]
-  ({:BIGINT       :type/BigInteger    
-    :BINARY       :type/*             
-    :BLOB         :type/*
-    :BOOLEAN      :type/Boolean
-    :CHAR         :type/Text
-    :CLOB         :type/Text
-    :DATALINK     :type/*
-    :DATE         :type/Date
-    :DBCLOB       :type/Text
-    :DECIMAL      :type/Decimal
-    :DECFLOAT     :type/Decimal
-    :DOUBLE       :type/Float
-    :FLOAT        :type/Float
-    :GRAPHIC      :type/Text
-    :INTEGER      :type/Integer
-    :NUMERIC      :type/Decimal
-    :REAL         :type/Float
-    :ROWID        :type/*
-    :SMALLINT     :type/Integer
-    :TIME         :type/Time
-    :TIMESTAMP    :type/DateTime
-    :VARCHAR      :type/Text
-    :VARGRAPHIC   :type/Text
-    :XML          :type/*
-    (keyword "CHAR () FOR BIT DATA")      :type/*
-    (keyword "CHAR() FOR BIT DATA") :type/*
-    (keyword "LONG VARCHAR")              :type/*
-    (keyword "LONG VARCHAR FOR BIT DATA") :type/*
-    (keyword "LONG VARGRAPHIC")           :type/*
-    (keyword "VARCHAR () FOR BIT DATA")   :type/*
-    (keyword "VARCHAR() FOR BIT DATA")   :type/*} database-type))
+;; custom DB2 type handling
+(def ^:private database-type->base-type
+  (some-fn (sql-jdbc.sync/pattern-based-database-type->base-type
+            [])  ; no changes needed here
+           {
+            :BIGINT       :type/BigInteger
+            :BINARY       :type/*
+            :BLOB         :type/*
+            :BOOLEAN      :type/Boolean
+            :CHAR         :type/Text
+            :CLOB         :type/Text
+            :DATALINK     :type/*
+            :DATE         :type/Date
+            :DBCLOB       :type/Text
+            :DECIMAL      :type/Decimal
+            :DECFLOAT     :type/Decimal
+            :DOUBLE       :type/Float
+            :FLOAT        :type/Float
+            :GRAPHIC      :type/Text
+            :INTEGER      :type/Integer
+            :NUMERIC      :type/Decimal
+            :REAL         :type/Float
+            :ROWID        :type/*
+            :SMALLINT     :type/Integer
+            :TIME         :type/Time
+            :TIMESTAMP    :type/DateTime
+            :VARCHAR      :type/Text
+            :VARGRAPHIC   :type/Text
+            :XML          :type/*
+            (keyword "CHAR () FOR BIT DATA")      :type/*
+            (keyword "CHAR() FOR BIT DATA") :type/*
+            (keyword "LONG VARCHAR")              :type/*
+            (keyword "LONG VARCHAR FOR BIT DATA") :type/*
+            (keyword "LONG VARGRAPHIC")           :type/*
+            (keyword "VARCHAR () FOR BIT DATA")   :type/*
+            (keyword "VARCHAR() FOR BIT DATA")   :type/*})) ; interval literal
+
+;; Use the same types as we use for PostgreSQL - with the above modifications
+(defmethod sql-jdbc.sync/database-type->base-type :db2
+  [driver column-type]
+  (or (database-type->base-type column-type)
+      ((get-method sql-jdbc.sync/database-type->base-type :postgres) driver column-type)))
 
 (defmethod sql-jdbc.sync/excluded-schemas :db2 [_]
   #{"QSYS"
     "QSYS2"
-    "SQLJ" 
+    "SQLJ"
     "SYSCAT"
     "SYSFUN"
     "SYSIBM"
@@ -361,15 +335,109 @@
 (defmethod sql-jdbc.execute/set-timezone-sql :db2 [_]
   "SET SESSION TIME ZONE = %s")
 
-(defn- materialized-views
-  "Fetch the Materialized Views DB2 for LUW"
-  [database]  
-  (try (set (jdbc/query (sql-jdbc.conn/db->pooled-connection-spec database)
-      ["SELECT trim(TABSCHEMA) AS \"schema\", trim(TABNAME) AS \"name\", trim(REMARKS) AS \"description\" FROM SYSCAT.TABLES ORDER BY 1, 2"]))
-       (catch Throwable e
-         (log/error e (trs "Failed to fetch materialized views for DB2 for LUW")))))
-
 (defmethod driver/describe-database :db2
   [driver database]
-  (-> ((get-method driver/describe-database :sql-jdbc) driver database)
-      (update :tables set/union (materialized-views database))))
+  (sql-jdbc.execute/do-with-connection-with-options
+   driver database nil
+   (fn [^java.sql.Connection conn]
+     ;; Retrieve tables from DB2's metadata
+     (let [metadata (.getMetaData conn)
+           result-set (.getTables metadata nil nil "%" (into-array ["TABLE" "VIEW"]))]
+       (with-open [rset result-set]
+         ;; Process each table
+         (let [tables (loop [acc #{}]
+                        (if (.next rset)
+                          (let [table-name (.getString rset "TABLE_NAME")
+                                schema-name (.getString rset "TABLE_SCHEM")
+                                remarks (.getString rset "REMARKS")]
+                            (recur (conj acc {:name table-name
+                                              :schema schema-name
+                                              :description remarks})))
+                          acc))]
+           ;; Return DatabaseMetadata
+           {:tables tables
+            :version (.getDatabaseProductVersion metadata)}))))))
+
+(defmethod driver/describe-fields :db2
+  [driver database]
+  (sql-jdbc.execute/do-with-connection-with-options
+   driver database nil
+   (fn [^java.sql.Connection conn]
+     ;; Retrieve columns from DB2's metadata
+     (let [metadata (.getMetaData conn)
+           result-set (.getColumns metadata nil nil "%" nil)]
+       (with-open [rset result-set]
+         ;; Process each field (column)
+         (loop [fields []]
+           (if (.next rset)
+             (let [table-name (.getString rset "TABLE_NAME")
+                   schema-name (.getString rset "TABLE_SCHEM")
+                   column-name (.getString rset "COLUMN_NAME")
+                   data-type (.getInt rset "DATA_TYPE") ; SQL type code
+                   type-name (.getString rset "TYPE_NAME") ; DB2-specific type
+                   column-size (.getInt rset "COLUMN_SIZE")
+                   nullable (case (.getInt rset "NULLABLE")
+                              java.sql.DatabaseMetaData/columnNullable true
+                              java.sql.DatabaseMetaData/columnNoNulls false
+                              nil)
+                   remarks (.getString rset "REMARKS")
+                   auto-increment (.getString rset "IS_AUTOINCREMENT")]
+               (recur (conj fields
+                            {:name column-name
+                             :database-type type-name
+                             :base-type (sql-jdbc.sync/database-type->base-type driver data-type type-name)
+                             :database-position (.getInt rset "ORDINAL_POSITION")
+                             :field-comment remarks
+                             :database-is-auto-increment (.equalsIgnoreCase "YES" auto-increment)
+                             :database-required (not nullable)
+                             :table-name table-name
+                             :table-schema schema-name})))
+             ;; Return the processed fields
+             fields)))))))
+
+(defmethod driver/describe-fks :db2
+  [driver database table-name]
+  (sql-jdbc.execute/do-with-connection-with-options
+   driver database nil
+   (fn [^java.sql.Connection conn]
+     ;; Retrieve foreign keys for the specified table
+     (let [metadata (.getMetaData conn)
+           result-set (.getImportedKeys metadata nil nil table-name)]
+       (with-open [rset result-set]
+         ;; Process each foreign key
+         (loop [fks []]
+           (if (.next rset)
+             (let [fk-table-name (.getString rset "FKTABLE_NAME")
+                   fk-table-schema (.getString rset "FKTABLE_SCHEM")
+                   fk-column-name (.getString rset "FKCOLUMN_NAME")
+                   pk-table-name (.getString rset "PKTABLE_NAME")
+                   pk-table-schema (.getString rset "PKTABLE_SCHEM")
+                   pk-column-name (.getString rset "PKCOLUMN_NAME")]
+               (recur (conj fks {:fk-table-name    fk-table-name
+                                 :fk-table-schema  fk-table-schema
+                                 :fk-column-name   fk-column-name
+                                 :pk-table-name    pk-table-name
+                                 :pk-table-schema  pk-table-schema
+                                 :pk-column-name   pk-column-name})))
+             fks)))))))
+
+
+(defmethod sql-jdbc.execute/set-timezone-sql :db2
+  [_]
+  "SET SESSION TIME ZONE = %s;")
+
+(defmethod driver/db-default-timezone :db2
+  [driver database]
+  (sql-jdbc.execute/do-with-connection-with-options
+   driver database nil
+   (fn [^java.sql.Connection conn]
+     (with-open [stmt (.prepareStatement conn "SELECT CURRENT_TIMEZONE FROM SYSIBM.SYSDUMMY1")
+                 rset (.executeQuery stmt)]
+       (when (.next rset)
+         (let [db2-offset (.getLong rset 1) ; Retrieve as Long
+               ;; Convert Long to string and format as ISO-8601
+               formatted-offset (format "%+03d:%02d"
+                                        (quot db2-offset 10000) ; Hours
+                                        (mod (quot db2-offset 100) 100)) ; Minutes
+               zone-offset (java.time.ZoneOffset/of formatted-offset)]
+           zone-offset)))))) ; Return ZoneOffset
