@@ -6,6 +6,7 @@ DB2 for LUW (Linux, UNIX, Windows) Driver for [Metabase](https://www.metabase.co
 ###  Versions
 | Metabase Version | DB2 Driver | Bugs |
 | --- | --- | --- |
+| 0.51 | 1.1.51.0 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.51/db2.metabase-driver.jar)) | |
 | 0.46 | 1.1.46.2 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.46.2/db2.metabase-driver.jar)) | |
 | Older versions | See [here](https://github.com/alisonrafael/metabase-db2-driver/releases) | See release details |
 
@@ -14,7 +15,7 @@ First download Metabase .jar file [here](https://metabase.com/start/other.html) 
 ```bash
 java -jar metabase.jar
 ```
-The `plugins/` directory will be created. Drop the driver in your `plugins/` directory and run metabase again. You can grab it [here](https://github.com/alisonrafael/metabase-db2-driver/releases) or build it yourself:
+The `/path/to/metabase/plugins/` directory will be created. Drop the driver in your `plugins/` directory and run metabase again. You can grab it [here](https://github.com/alisonrafael/metabase-db2-driver/releases) or build it yourself:
 
 ## Building the DB2 Driver Yourself
 
@@ -26,30 +27,30 @@ The `plugins/` directory will be created. Drop the driver in your `plugins/` dir
 
 ### Clone the Metabase project
 
-Clone the [Metabase repo](https://github.com/metabase/metabase) first if you haven't already done so.
+Clone the [Metabase repo](https://github.com/metabase/metabase)
 
-Inside `/metabase_source` run "clojure -X:deps prep" after clone or pull.
+Inside `/path/to/metabase-master` run 
+```bash
+clojure -X:deps prep
+```
 
 ### Clone the DB2 Metabase Driver
 
-Clone this [DB2 driver repo](https://github.com/alisonrafael/metabase-db2-driver) inside drivers modules folder `/metabase_source/modules/drivers` and rename this repo folder to 'db2' only.
-
-Edit `/metabase_source/modules/drivers/deps.edn` and insert a db2 parameter, just like others: `metabase/db2 {:local/root "db2"}`.
+Clone this [DB2 driver repo](https://github.com/alisonrafael/metabase-db2-driver) 
 
 Edit the driver as you want.
 
 ### Compile the DB2 driver
 
-Inside `/metabase_source` run 
+Inside `/path/to/metabase-db2-driver` run 
 
 ```bash
-./bin/build-driver.sh db2
+sh ./build.sh
 ```
 
 ### Copy it to your plugins dir
 ```bash
-mkdir -p /path/to/metabase/plugins/
-cp /metabase_source/resources/modules/db2.metabase-driver.jar /path/to/metabase/plugins/
+cp /path/to/metabase-db2-driver/target/db2.metabase-driver.jar /path/to/metabase/plugins/
 ```
 
 ### Run Metabase
