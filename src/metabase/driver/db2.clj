@@ -16,16 +16,13 @@
    [metabase.util.date-2 :as u.date]
    [metabase.util.honey-sql-2 :as h2x]
    [metabase.util.log :as log]
-   [metabase.util.ssh :as ssh]
-   [schema.core :as s]
-   )
+   [schema.core :as s])
   (:import [java.sql ResultSet Types]
            java.util.Date)
   (:import (java.sql ResultSet Timestamp Types)
-           (java.util Date )
+           (java.util Date)
            (java.time LocalDateTime OffsetDateTime OffsetTime ZonedDateTime LocalDate LocalTime)
-           (java.time.temporal Temporal)
-           ))
+           (java.time.temporal Temporal)))
 
 (set! *warn-on-reflection* true)
 
@@ -99,15 +96,14 @@
 
 (defmethod sql.qp/add-interval-honeysql-form :db2 [_ hsql-form amount unit]
   (h2x/+ (h2x/->timestamp hsql-form) (case unit
-    :second  [:raw (format "%d seconds" (int amount))]
-    :minute  [:raw (format "%d minutes" (int amount))]
-    :hour    [:raw (format "%d hours" (int amount))]
-    :day     [:raw (format "%d days" (int amount))]
-    :week    [:raw (format "%d days" (int (* amount 7)))]
-    :month   [:raw (format "%d months" (int amount))]
-    :quarter [:raw (format "%d months" (int (* amount 3)))]
-    :year    [:raw (format "%d years" (int amount))]
-  )))
+                                       :second  [:raw (format "%d seconds" (int amount))]
+                                       :minute  [:raw (format "%d minutes" (int amount))]
+                                       :hour    [:raw (format "%d hours" (int amount))]
+                                       :day     [:raw (format "%d days" (int amount))]
+                                       :week    [:raw (format "%d days" (int (* amount 7)))]
+                                       :month   [:raw (format "%d months" (int amount))]
+                                       :quarter [:raw (format "%d months" (int (* amount 3)))]
+                                       :year    [:raw (format "%d years" (int amount))])))
 
 (defmethod sql.qp/unix-timestamp->honeysql [:db2 :seconds] [_ _ expr]
   (h2x/+ [:raw "timestamp('1970-01-01 00:00:00')"] [:raw (format "%d seconds" (int expr))])
@@ -125,9 +121,9 @@
 
 (defmethod sql.qp/->honeysql [:db2 :substring]
   [driver [_ arg start length]]
-  		(if length
-    	[:substr (sql.qp/->honeysql driver arg) (sql.qp/->honeysql driver start) [:min [:length (sql.qp/->honeysql driver arg)] (sql.qp/->honeysql driver length)]]
-    	[:substr (sql.qp/->honeysql driver arg) (sql.qp/->honeysql driver start)]))
+  (if length
+    [:substr (sql.qp/->honeysql driver arg) (sql.qp/->honeysql driver start) [:min [:length (sql.qp/->honeysql driver arg)] (sql.qp/->honeysql driver length)]]
+    [:substr (sql.qp/->honeysql driver arg) (sql.qp/->honeysql driver start)]))
 
 
 ;; Use LIMIT OFFSET support DB2 v9.7 https://www.ibm.com/developerworks/community/blogs/SQLTips4DB2LUW/entry/limit_offset?lang=en
@@ -165,11 +161,11 @@
 ;; Maybe it could not to be necessary with the use of DB2_DEFERRED_PREPARE_SEMANTICS
 (defmethod sql.qp/->honeysql [:db2 Date]
   [_ date]
-  		(h2x/->timestamp (t/format "yyyy-MM-dd HH:mm:ss" date))) ;;v0.34.x needs it?
+  (h2x/->timestamp (t/format "yyyy-MM-dd HH:mm:ss" date))) ;;v0.34.x needs it?
 
 (defmethod sql.qp/->honeysql [:db2 Timestamp]
   [_ date]
-  		(h2x/->timestamp (t/format "yyyy-MM-dd HH:mm:ss" date)))
+  (h2x/->timestamp (t/format "yyyy-MM-dd HH:mm:ss" date)))
 
 
 ;; MEGA HACK from sqlite.clj ;;v0.34.x
@@ -262,21 +258,21 @@
               :subprotocol "db2"
               :subname     (str "//" host ":" port "/" dbname ":readOnly=true;")
               ;; :enableSslConnection (boolean ssl)
-              :sslConnection (boolean ssl)
-              }
+              :sslConnection (boolean ssl)}
              (dissoc details :host :port :dbname :ssl))
       (sql-jdbc.common/handle-additional-options details, :seperator-style :semicolon)))
 
 (defmethod driver/can-connect? :db2 [driver details]
-  (let [connection (sql-jdbc.conn/connection-details->spec driver (ssh/include-ssh-tunnel! details))]
-    (= 1 (first (vals (first (jdbc/query connection ["SELECT 1 FROM SYSIBM.SYSDUMMY1"])))))))
+  (let [connection (sql-jdbc.conn/connection-details->spec driver details)]
+    (= 1 (first (vals (first (jdbc/query connection
+                                         ["SELECT 1 FROM SYSIBM.SYSDUMMY1"])))))))
+
 
 ;; custom DB2 type handling
 (def ^:private database-type->base-type
   (some-fn (sql-jdbc.sync/pattern-based-database-type->base-type
             [])  ; no changes needed here
-           {
-            :BIGINT       :type/BigInteger
+           {:BIGINT       :type/BigInteger
             :BINARY       :type/*
             :BLOB         :type/*
             :BOOLEAN      :type/Boolean
