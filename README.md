@@ -6,10 +6,7 @@ DB2 for LUW (Linux, UNIX, Windows) Driver for [Metabase](https://www.metabase.co
 ###  Versions
 | Metabase Version | DB2 Driver | Bugs |
 | --- | --- | --- |
-| 0.62 | 1.1.57.0 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.57/db2.metabase-driver.jar)) | |
-| 0.57 | 1.1.57.0 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.57/db2.metabase-driver.jar)) | |
-| 0.51 | 1.1.51.0 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.51/db2.metabase-driver.jar)) | |
-| 0.46 | 1.1.46.2 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.46.2/db2.metabase-driver.jar)) | |
+| 0.62 | 1.1.62 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.62/db2.metabase-driver.jar)) | |
 | Older versions | See [here](https://github.com/alisonrafael/metabase-db2-driver/releases) | See release details |
 
 ###  Running Metabase application with DB2 driver plugin
