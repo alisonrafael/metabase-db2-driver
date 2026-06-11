@@ -6,6 +6,8 @@ DB2 for LUW (Linux, UNIX, Windows) Driver for [Metabase](https://www.metabase.co
 ###  Versions
 | Metabase Version | DB2 Driver | Bugs |
 | --- | --- | --- |
+| 0.62 | 1.1.57.0 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.57/db2.metabase-driver.jar)) | |
+| 0.57 | 1.1.57.0 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.57/db2.metabase-driver.jar)) | |
 | 0.51 | 1.1.51.0 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.51/db2.metabase-driver.jar)) | |
 | 0.46 | 1.1.46.2 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.46.2/db2.metabase-driver.jar)) | |
 | Older versions | See [here](https://github.com/alisonrafael/metabase-db2-driver/releases) | See release details |
@@ -20,7 +22,7 @@ The `/path/to/metabase/plugins/` directory will be created. Drop the driver in y
 ## Building the DB2 Driver Yourself
 
 ### Prerequisites
-- Java JDK 11
+- Java JDK 21
 - Node.js
 - Clojure
 - Yarn
