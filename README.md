@@ -44,7 +44,14 @@ DB2 for LUW (Linux, UNIX, Windows) driver for [Metabase](https://www.metabase.co
 
 ## Building from Source
 
-Use this if you want to modify the driver.
+Use this if you want to modify the driver or recompile it for a newer version of Metabase.
+
+Before you begin, make sure you have installed:
+
+- Java JDK 21
+- Clojure
+- Node.js
+- Yarn
 
 Both repositories must be cloned as siblings in the same parent directory:
 ```
