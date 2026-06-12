@@ -1,70 +1,87 @@
+# Metabase DB2 Driver
 
-# Metabase Driver: DB2
 
-DB2 for LUW (Linux, UNIX, Windows) Driver for [Metabase](https://www.metabase.com).
+DB2 for LUW (Linux, UNIX, Windows) driver for [Metabase](https://www.metabase.com).
 
-###  Versions
-| Metabase Version | DB2 Driver | Bugs |
-| --- | --- | --- |
-| 0.62 | 1.1.62 ([jar](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.62/db2.metabase-driver.jar)) | |
-| Older versions | See [here](https://github.com/alisonrafael/metabase-db2-driver/releases) | See release details |
+> **Note:** Native DB2 support is not yet available in Metabase
+> ([issue #1509](https://github.com/metabase/metabase/issues/1509)).
+> This driver is maintained by the community as described in the
+> [Metabase community drivers guide](https://www.metabase.com/docs/latest/developers-guide/community-drivers).
 
-###  Running Metabase application with DB2 driver plugin
-First download Metabase .jar file [here](https://metabase.com/start/other.html)  and run
-```bash
-java -jar metabase.jar
+## Compatibility
+
+
+| Metabase Version | Driver Download | 
+|------------------|----------------|
+| 0.62 | [1.1.62](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.62/db2.metabase-driver.jar) |
+| 0.51 | [1.1.51](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.51/db2.metabase-driver.jar) |
+| 0.46 | [1.1.46.2](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.46.2/db2.metabase-driver.jar) |
+| Older versions | [See releases](https://github.com/alisonrafael/metabase-db2-driver/releases) |
+
+
+## Installation
+
+1.  **Download the Metabase JAR** from [metabase.com](https://metabase.com/start/other.html)
+   and run it once to generate the `plugins/` directory:
+    ```bash
+    java -jar /path/to/metabase/metabase.jar
+    ```
+
+2.  **Download the driver JAR** from the [releases page](https://github.com/alisonrafael/metabase-db2-driver/releases) and place it in the `plugins/` directory: `/path/to/metabase/plugins/db2.metabase-driver.jar`
+
+3.  **Restart Metabase**:
+    ```bash
+    java -jar /path/to/metabase/metabase.jar
+    ```
+
+> **Tip:** If you encounter `CharConversionException` errors, start Metabase with the
+> flag below. This makes the JCC driver convert invalid characters to NULL instead
+> of throwing exceptions:
+> ```bash
+> java -Ddb2.jcc.charsetDecoderEncoder=3 -jar metabase.jar
+> ```
+
+
+## Building from Source
+
+Use this if you want to modify the driver.
+
+Both repositories must be cloned as siblings in the same parent directory:
 ```
-The `/path/to/metabase/plugins/` directory will be created. Drop the driver in your `plugins/` directory and run metabase again. You can grab it [here](https://github.com/alisonrafael/metabase-db2-driver/releases) or build it yourself:
-
-## Building the DB2 Driver Yourself
-
-### Prerequisites
-- Java JDK 21
-- Node.js
-- Clojure
-- Yarn
-
-### Clone the Metabase project
-
-Clone the [Metabase repo](https://github.com/metabase/metabase)
-
-Inside `/path/to/metabase-master` run 
-```bash
-clojure -X:deps prep
-```
-
-### Clone the DB2 Metabase Driver
-
-Clone this [DB2 driver repo](https://github.com/alisonrafael/metabase-db2-driver) 
-
-Edit the driver as you want.
-
-### Compile the DB2 driver
-
-Inside `/path/to/metabase-db2-driver` run 
-
-```bash
-sh ./build.sh
-```
-
-### Copy it to your plugins dir
-```bash
-cp /path/to/metabase-db2-driver/target/db2.metabase-driver.jar /path/to/metabase/plugins/
-```
-
-### Run Metabase
-
-```bash
-jar -jar /path/to/metabase/metabase.jar
+/some/directory/
+├── metabase-master/
+└── metabase-db2-driver/
 ```
 
-## Configurations
+1. **Clone and prepare Metabase**
+    ```bash
+    git clone https://github.com/metabase/metabase metabase-master
+    cd metabase-master
+    clojure -X:deps prep
+    ```
 
-Run as follows to avoid the CharConversionException exceptions. In this way, JCC converts invalid characters to NULL instead of throwing exceptions:
+2. **Clone this driver**
+    ```bash
+    cd ..
+    git clone https://github.com/alisonrafael/metabase-db2-driver
+    ```
 
-```bash
-java -Ddb2.jcc.charsetDecoderEncoder=3 -jar metabase.jar
-```
+3. **Make your changes**, then build:
+    ```bash
+    cd metabase-db2-driver
+    sh ./build.sh
+    ```
 
-## Thanks
-Thanks to everybody here [https://github.com/metabase/metabase/issues/1509](https://github.com/metabase/metabase/issues/1509)
+4. **Copy the output to your plugins directory and restart Metabase**
+
+   > **Note:** `/path/to/metabase/` here refers to the directory where you placed
+   > the Metabase JAR in the Installation section, not the cloned source repository.
+
+    ```bash
+    cp /path/to/metabase-db2-driver/target/db2.metabase-driver.jar /path/to/metabase/plugins/
+    java -jar /path/to/metabase/metabase.jar
+    ```
+## Acknowledgements
+
+This driver exists thanks to the collaborative effort of the community in
+[metabase/metabase#1509](https://github.com/metabase/metabase/issues/1509).
