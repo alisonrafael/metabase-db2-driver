@@ -13,7 +13,7 @@ DB2 for LUW (Linux, UNIX, Windows) driver for [Metabase](https://www.metabase.co
 
 | Metabase Version | Driver Download | 
 |------------------|----------------|
-| 0.62 | [1.1.62](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.62/db2.metabase-driver.jar) |
+| 0.65 | [1.1.62](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.62/db2.metabase-driver.jar) |
 | 0.51 | [1.1.51](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.51/db2.metabase-driver.jar) |
 | 0.46 | [1.1.46.2](https://github.com/alisonrafael/metabase-db2-driver/releases/download/v1.1.46.2/db2.metabase-driver.jar) |
 | Older versions | [See releases](https://github.com/alisonrafael/metabase-db2-driver/releases) |
